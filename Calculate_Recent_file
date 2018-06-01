@@ -1,0 +1,60 @@
+
+/ * ------------------------------------------------ -------------------------------
+Calculate the most recent table from the date in the name
+--------------------------------------------------*/
+% macro mcrCalcDataRecente (libtmp, lib, tab);
+% global mdtRE tabrecente;
+
+date _null_;
+call symputx ("tamtab", length ("& tab"));
+run;
+% put zzzzzzzzzzzzzzz => & tamtab;
+
+
+proc sql noprint;
+create table & libtmp..cm_tmp as
+select scan (memname, -1, "_") as dtcm
+from dictionary.tables
+where libname eq upcase ("& lib")
+and substr (memname, 1, & tamtab.) eq upcase ("& tab");
+quit;
+
+proc sql noprint;
+select nobs
+into: mctremail
+from dictionary.tables
+where libname eq upcase ("& libtmp")
+and memname eq upcase ("cm_tmp");
+quit;
+% let mctremail = & mctremail;
+% put number of tables ====> & mctremail;
+
+proc sort data = & libtmp..cm_tmp;
+by descending dtcm;
+run;
+
+date _null_;
+set & libtmp..cm_tmp (obs = 1);
+call symputx ("mdtRE", dtcm);
+run;
+
+date _null_;
+call symputx ("tabrecente", "& lib .. & tab. & mdtRE");
+run;
+
+% put latest table ===> & tabrecente;
+
+/ * exclude temporary table from dictionary * /
+proc datasets lib = & libtmp. nolist;
+delete cm_tmp;
+run;
+% mend mcrCalcDataRecente;
+
+% mcrCalcDataRecente (work, test, NAME_HERE);
+
+
+* example of use;
+test date;
+set & tabrecente .;
+run;
+

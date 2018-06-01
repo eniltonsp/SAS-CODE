@@ -1,0 +1,13 @@
+/* Macro EXPORT TABLE */
+
+
+%macro mcrExportaTxt(tab,dtarq,var);
+	data _null_;
+	set &libori..&tab.&dtarq. (keep = &var.);
+	file "&pathfinal./&tab.&dtarq..asc"	dlm = "|";
+	vDtarq = &vDtarq.;
+	put vDtarq &var.;
+	run;
+%mend mcrExportaTxt;
+
+%mcrExportaTxt(nametable.,201109,var1 var2 var3);

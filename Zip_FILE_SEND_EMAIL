@@ -1,0 +1,34 @@
+
+
+ods package(file_zip) open nopf;
+ods package(file_zip) 
+    add file='\\DIRECTORY\FILE.CSV';
+ods package(file_zip) 
+    publish archive        
+       properties
+      (archive_name=  
+                  'name_file.zip'                  
+       archive_path='\\DIRECTORY\');
+ods package(file_zip) close;
+
+/*Imprime config. email na log*/
+proc options group=email;run;
+
+filename SendMail email to=("email@email.com")
+/*from='enimachado@grupoamil.com.br'*/
+ATTACH = "\\DIRECTORY\file_name.CSV"
+type='text/html'
+subject="Write the subject";
+
+data outfile;
+length line $ 4000;
+infile "\\DIRECTORY\sas1.html" lrecl=4000 TRUNCOVER;
+input line $ 1 - 4000;
+run;
+
+
+data _null;
+file SendMail;
+set outfile;
+put line;
+run;

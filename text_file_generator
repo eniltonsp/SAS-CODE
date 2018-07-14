@@ -1,0 +1,175 @@
+/* DESENVOLVIMENTO */
+/*%LET PROMPTCOMPETENCIA = 01SEP2014;*/
+/*%LET PROMPTGRUPO = CODGRUNUM;*/
+/*%LET PROMPTTABLES = VW_DIM_BENEF_3;*/
+/*%LET PROMPTTABLES_COUNT = 2;*/
+/*%LET PROMPTTABLES0 = 2;*/
+/*%LET PROMPTTABLES1 = VW_DIM_BENEF_3;*/
+/*%LET PROMPTTABLES2 = VW_DIM_BENEF_2;*/
+/*%LET PROMPTCONTRATO = CODCONTRATO;*/
+/*%LET PROMPTCONTRATO_COUNT = 1;*/
+
+options mlogic mprint symbolgen;
+
+%macro Exports;
+
+	data _null_;
+		call symputx('aspas',"'");
+	run;
+
+	%if &PROMPTTABLES_count. ne 0 %then
+		%do;
+
+    LIBNAME NAMELIB META library=NAME_LIB;
+
+	
+    %if &PROMPTTABLES_COUNT. eq 1 %then
+
+				%let varVerifica = &PROMPTTABLES.;
+			%else
+				%do countT = 1 %to &PROMPTTABLES_COUNT.;
+					%if &countT. eq 1 %then
+						%let varVerifica = "&&PROMPTTABLES&countT.";
+					%else %let varVerifica = &varVerifica.,"&&PROMPTTABLES&countT.";
+				%end;
+
+			%put varVerifica = &varVerifica.;
+
+
+	       proc sql noprint;
+				select distinct 
+					cats(LIBRARY,".",tabela), 
+					SAIDA, 
+					cats("'",coalescec(dlm,"SemDlm"),"'"),
+					TIPO_PROCESSAMENTO,
+					LIBRARY
+				into 
+					:varNamTb separated by "|" , 
+					:varSaida separated by "|", 
+					:varDlm separated by "|",
+					:varTipoProcesso separated by "|",
+					:varLibrary separated by "|"
+				from 
+					lib_ora.AGR_TABLE_DLM_SAS(where=(GRUPO_EMPRESA = &PromptGrupo. AND tabela in (&varVerifica.)));
+			quit;
+
+    %put Tabelas: &varNamTb., Caminho: &varSaida. , Dlms: &varDlm, GRUPO_EMPRESA: &PromptGrupo.;
+
+	/*Filtros*/
+	%let vFiltro = COD_GRUPO_EMPRESA = &PromptGrupo. AND Competencia = "&PromptCompetencia."D;
+
+	%if &PromptContrato_Count. ne 0 %then %do;
+		
+		%do cont = 1 %to &PromptContrato_Count.;
+			%if &cont. eq 1 %then
+				%let vContratos = "&PromptContrato.";
+			%else %let vContratos = &vContratos., "&&PromptContrato&cont.";
+		%end;
+
+		%let vFiltro = &vFiltro. AND COD_TS_CONTRATO IN (&vContratos.);
+	%end;
+
+    %do i=1 %to %sysfunc(countw(&varNamTb.,"|"));
+				/* pega a quantidade de registros */
+				PROC SQL noprint;
+					SELECT 
+						COUNT(*) INTO :QTD_REGISTROS
+					FROM 
+						%scan(&varNamTb.,&i.,"|")
+					WHERE
+						&vFiltro.
+					;
+				QUIT;
+
+				%if %scan(&varDlm.,&i.,"|") eq 'SemDlm' %then
+					%do;
+
+			            data _null_;
+							format varExport $32657.;
+							retain varExport;
+							set lib_ora.AGR_TABLE_DLM_SAS(where=(cats(LIBRARY,".",tabela) eq "%scan(&varNamTb.,&i.,"|")")) end=eof;
+							varExport=catx("",varExport,cats('@',TAM_INI),campo," ");
+
+							if eof then
+								call symputx('varExport',varExport);
+						run;
+
+
+                   %put Export = &varExport.;
+
+					DATA _NULL_;
+						CALL SYMPUTX('DT_INI_GER', put(datetime(),datetime20.));
+					RUN;
+					%PUT .             INICIO DA GERAÇÃO ----->>> &DT_INI_GER.;
+
+                   data _null_;
+                         file "%scan(&varSaida.,&i.,"|")" lrecl=32567;
+                         set %scan(&varNamTb.,&i.,"|")(WHERE=(&vFiltro.));
+                         put  &varExport.;
+                   run;
+
+					DATA _NULL_;
+						CALL SYMPUTX('DT_FIN_GER', put(datetime(),datetime20.));
+					RUN;
+					%PUT .             FIM DA GERAÇÃO ----->>> &DT_FIN_GER.;
+
+              %end;
+         %else
+              %do;
+					DATA _NULL_;
+						CALL SYMPUTX('DT_INI_GER', put(datetime(),datetime20.));
+					RUN;
+					%PUT .             INICIO DA GERAÇÃO ----->>> &DT_INI_GER.;
+
+                   proc export REPLACE data=%scan(&varNamTb.,&i.,"|")(WHERE=(&vFiltro.))
+                         outfile="%scan(&varSaida.,&i.,"|")"
+                         dbms=dlm;
+                         delimiter=%scan(&varDlm.,&i.,"|");
+                         putnames=no;
+                   run;
+
+					DATA _NULL_;
+						CALL SYMPUTX('DT_FIN_GER', put(datetime(),datetime20.));
+					RUN;
+					%PUT .             FIM DA GERAÇÃO ----->>> &DT_FIN_GER.;
+
+
+              %end;
+	DATA historico;
+		length 	USUARIO_GERACAO $100.
+				TIPO_PROCESSAMENTO $250.
+				GRUPO_EMPRESA 8.
+				DaTa_INI_GER 8.
+				DaTa_FIm_GER 8.
+				ARQUIVO_GERADO $250.
+				QTDE_REGISTRO_ARQ 8.
+				LIBRARY $250.
+				AREA $250.;
+
+		USUARIO_GERACAO  = &_CLIENTUSERID.;
+		TIPO_PROCESSAMENTO = "%scan(&varTipoProcesso.,&i.,'|')";
+		GRUPO_EMPRESA = &PromptGrupo.;
+		DaTa_INI_GER = "&DT_INI_GER."dt;
+		DaTa_FIm_GER = "&DT_FIN_GER."dt;
+		ARQUIVO_GERADO = "%scan(&varSaida.,&i.,'|')";
+		QTDE_REGISTRO_ARQ  = &QTD_REGISTROS.;
+		LIBRARY = "%scan(&varLibrary.,&i.,'|')";
+		AREA = "FATURAMENTO";
+
+	RUN;
+	PROC APPEND BASE=lib_ora.LOG_SAS_GERA_TXT  DATA=HISTORICO FORCE; RUN;
+
+	%end;
+
+%end;
+
+proc print data=lib_ora.AGR_TABLE_DLM_SAS;
+   where  GRUPO_EMPRESA = &PromptGrupo. AND tabela in (&varVerifica.);
+   title 'Arquivos selecionados';
+   var  GRUPO_EMPRESA EMPRESA TIPO_PROCESSAMENTO SAIDA;
+
+run;
+
+%mend Exports;
+
+%Exports;

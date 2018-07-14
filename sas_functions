@@ -1,0 +1,334 @@
+libname orion 'C:\Bases\Prg1';
+
+
+
+/*------------------------------------------------------------------------------------
+CAPITULO 5 - PRG2
+--------------------------------------------------------------------------------------*/
+
+
+/*------------------------------------------------------------------------------------
+
+			FUNÇÕES DO SAS
+
+-------------------------------------------------------------------------------------*/
+
+/*   MANIPULAÇÃO DE TEXTO
+-------------------------------------------------------------------------------------*/
+
+data Funcs_Texto;
+	Frase='     Sas Base treinamento               ';
+    /*Sem espaços à direita*/
+    AlDireita=Right(Frase);
+
+	/*Sem Espaços à esquerda*/
+    AlEsquerda=Left(Frase);
+
+    /*Converte em Maiúscula*/
+	AllMaiscula=UpCase(Frase);
+
+	/*Converte em Minúscula*/
+    AllMinuscula=LowCase(Frase);
+
+	/*Primeira Maiúscula*/
+    PrMaiuscula=PropCase(Frase);
+    
+	/*Número de caracteres*/
+    NumCaract=Length(Frase);
+    
+	/*Extrai espaços a esquerda e a direita*/
+    NoSpace=CompBl(Frase);
+	
+	/*Extrai uma sequüência de caracteres a paritr de uma Posição*/
+    nPosChar=Char(Frase,6);
+run;
+
+
+/*COMPRESS - Extrai um determinado caracter de uma expressão*/
+Data Funcs;
+	ID='20 01-005 024';
+	new_ID1=Compress(ID);
+	new_ID2=Compress(ID,'-');
+	new_ID3=Compress(ID,' -');
+run;
+
+/*FIND - Localiza uma sequüência de caracteres dentro de uma expressão texto*/
+Data Find;
+	text='AUSTRALIA, DENMARK, US';
+	Pos1=Find(Text, 'US');
+	Pos2=Find(Text, ' US');
+	Pos3=Find(Text, 'us');
+
+	/*O argumento I, indica uma procura ignorando case sensitive*/
+	Pos4=Find(Text, 'us','I');
+
+	/*O argumento 10, indica a partir de qual posição inicia a procura*/
+	Pos5=Find(Text, 'US','I',10);
+run;
+
+/*CATX - Concatena caracteres, usando como delimitador o argumento da função e
+retirando os espaços em branco da esquerda e direita
+
+CAT - Concatena sem retirar espaços*/
+
+Data CatX;
+	Nome1='SAS  ';
+	Nome2='Institute';
+	NomeFull=catx(' ',Nome1,Nome2);
+	NomeFullCat=cat(' ',Nome1,Nome2);
+
+	/* Utilizando o pipe | para concatenar*/
+
+    NomeFull2=Nome1 || ' ' || Nome2;
+run;
+
+/*SCAN - Extrae um sequência de caracteres, a partir da posição de um caractere específico*/
+Data SCAN;
+	nEmpresa='Souza & Silva Advogadas';
+	/*Extrai a segunda palavra após o caractere & */
+	PriNome=scan(nEmpresa,1,'&');
+	SecNome=scan(nEmpresa,2,'&');
+run;
+
+/*SUBSTRING - Extrae uma sequência de caracteres de acordo com a posição inicial e final especificadas no argumento da função*/
+Data Substr;
+
+	Texto='Curso SAS Base';
+	Esquerda=substr(Texto,1,5);
+	Meio=substr(Texto,7,3);
+	Direita=substr(Texto,11,4);
+
+	Texto2='SAS Advanced';
+	nPos=FIND(Texto2,'SAS','I');
+	Resultado=substr(Texto2,nPos,3);
+
+run;
+
+/*TRANWRD - Troca uma seqüência de caracteres dentro de uma expressão*/
+Data TRANWRD;
+  sNmProduto='SAS Guide 4.1';
+  sNewProduto=TRANWRD(sNmProduto,'4.1','4.3');
+run;	
+
+
+
+
+/*-----------------------------------------------------------------------------------
+|                     FUNÇÕES NUMÉRICAS
+-------------------------------------------------------------------------------------*/
+
+
+/*ROUND - Arredonda um valor numérico*/
+Data Truncate;
+   NewVar1=round(12.12);
+   NewVar2=round(-6.478);
+   /*Arredonda para o próximo Valor definido no segundo Argumento*/	
+   NewVar3=round(42.65,.1);
+   NewVar4=round(96.47,10);
+run;
+
+/*INT - Extrai o valor inteiro*/
+Data INT;
+	nNum1=1.44;
+	nInt1=Int(nNum1);
+run;
+
+/*Ceil - Retorna o valor igual ou o MAIOR valor inteiro de um Número*/
+Data Ceil;
+	Var1=6.478;
+	CeilVar1=Ceil(Var1);
+run;
+
+/*FLOOR - Retorna o valor igual ou o MENOR valor inteiro de um Número*/
+
+Data Floor;
+    Var1=6.478;
+    FloorVar=Floor(Var1);
+run;
+ 
+/*-------FUNÇÕES ESTATÍSTICAS--------------*/
+
+Data Estatistics;
+	Var1=12;
+	Var2=.;
+	Var3=7;
+	Var4=5;
+
+	/*Soma*/
+	SumVars=sum(Var1,Var2,Var3,Var4);
+
+	/*Média*/
+	AvgVars=Mean(Of Var1-Var4);
+	AvgVars2=Mean(Var1,Var2,Var3,Var4);
+    
+	/*Número de Missing*/
+	*MissVars=cmiss(of Var1-Var4); /*cmiss - a partir da versão 4.2 do Guide e 9.2 do SAS Base*/
+    MissVars2=nmiss(of Var1-Var4);
+
+	/*Número de Não Missing*/
+	NotMissVars=N(of Var1-Var4);
+
+	/*Número Máximo*/
+	MaxVars=Max(Of Var1-Var4);
+
+	/*Número Mínimo*/
+	MinVars=Min(Of Var1-Var4);
+
+run;
+
+/* Abaixo são mostradas algumas de se escrever a Função Soma, você pode usar a mesma maneira para todas as funções estatísticas vistas acima*/
+
+/*Área de Lista Numerada*/
+data TesteSoma1;
+	input
+		Qtr1
+		Qtr2
+		Var1	
+		Qtr3
+		Qtr4;
+	Total=sum(Of Qtr1-Qtr4);
+	Expression='sum(Of Qtr1-Qtr4) Var1 Não Inclusa';
+	Datalines;
+4  2  4  5 6
+5  5  3  5 5
+;
+
+/*Lista de Intervalo Nomeado*/
+data TesteSoma2;
+	input
+		Qtr1
+		Second
+		Q3	
+		Fourth
+		Var2;
+	Total=sum(Of Qtr1--Fourth);
+	Expression='sum(Of Qtr1--Fourth) Var2 Não Inclusa';
+	Datalines;
+4  2  4  5 6
+5  5  3  5 5
+;
+
+/*Lista Pelo Prefixo do Nome*/
+data TesteSoma3;
+	input
+		TotJan
+		Qtr2
+		TotFeb	
+		TotMar;
+	Total=sum(Of Tot:);
+	Expression='sum(Of Tot:) Qt2 Não Inclusa';
+	Datalines;
+4  2  4  5
+5  5  3  5
+;
+
+/*Lista Com Nomes Especiais (Pelo tipo de Variável)*/
+data TesteSoma4;
+	input
+		Qtr1
+		Name $
+		Q3	
+		Fourth;
+	Total=sum(Of _Numeric_);
+	Expression='sum(Of _Numeric_) Variável Name Não Inclusa';
+	Datalines;
+4  Pedro  40  2
+5  Maria  20  5
+;
+
+
+
+
+/*---------------------------------------------------------------------------------------------------------------------
+
+                           FUNÇÕES DE CONVERSÃO
+_______________________________________________________________________________________________________________________*/
+
+/* INPUT - Converte expressões texto em número formatado*/
+
+Data INPUT;
+
+   CVar1='32000';
+   CVar2='32.000';
+   CVar3='03MAY2008';
+   CVar4='030508';
+   NVar1=Input(CVar1,5.);
+   NVar2=Input(CVar2,commax6.);
+   NVar3=Input(CVar3,date9.);
+   NVar4=Input(CVar4,ddmmyy6.);
+run;
+
+Data Input_Quiz;
+	Share_Price="$130.25";
+	MyShare=124;
+
+
+    TotalValue=Share_Price+MyShare;
+	TotalValue2=sum(Share_Price,MyShare);
+run;
+
+/*PUT - Converte Número em Texto*/
+
+Data PUT;
+	nVar1=614;
+	NVar2=55000;
+	NVar3=366;
+	Cvar1=Put(NVar1,3.);
+	CVar2=Put(NVar2,Dollar7.);
+	CVar3=Put(Nvar3,date9.);
+run;
+
+
+
+
+
+
+/*|||||||||||||||||||||||||||||||||||||||||||||||||COMENTÁRIO ADCIONAL ||||||||||||||||||||||||||||||||||||||||||||||||||||||*/
+
+
+
+/*------------------------------------------------------------------------------------------------------------
+
+       UTILIZANDO O COMANDO ATTRIB PARA LEITURA DE ARQUIVOS EXTERNOS
+
+A vantagem de se estabelecer os Atributos da Tabela de saida com a instrução ATTRIB logo no início,
+é que o SAS já vai Montar o PDV (Layout da Tabela) antes de ler o arquivo de entrada, tornando o processo
+mais ágil e o código mais claro
+--------------------------------------------------------------------------------------------------------------*/ 
+
+data Tb_Saida;
+	set cstMasc;
+
+	Attrib Customer_ID	       Length=8	     Format= BEST12.		Label='Customer ID'
+	       Country	           Length=$2	 Format= $CHAR2.		Label='Customer Country'
+	       Gender	           Length=$1	 Format= $CHAR1.        Label='Customer Gender'
+	       Personal_ID         Length=$15	 Format= $CHAR15.       Label='Personal ID'
+	       Customer_Name       Length=$40    Format= $CHAR40.       Label='Customer Name'
+	       Costumer_FirstName  Length=$20    Format= $CHAR20.       Label='Customer First Name'
+	       Customer_LastName   Length=$30    Format= $CHAR30.		Label='Customer Last Name'
+	       Birth_Date		   Length=8		 Format= DATE9.			Label='Customer Birth Date' Informat=mmddyy10.
+	       Customer_Address	   Length=$45    Format= $CHAR45.		Label='Customer Address'
+	       Street_ID		   Length=8      Format= BEST12.		Label='Street ID'
+	       Customer_Type_ID    Length=8      Format= BEST8.			Label='Customer Type ID';	
+
+
+
+	FILE 'cstMasc.txt'
+	dlm=',' lrecl=187;
+
+	put
+	Customer_ID
+	Country
+	Gender
+	Personal_ID
+    Customer_Name
+	Customer_FirstName
+	Customer_LastName
+	Birth_Date
+	Customer_Address
+	Street_ID
+	Customer_Type_ID;
+
+
+run;
+proc contents data=cstMasc;run;

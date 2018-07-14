@@ -1,0 +1,61 @@
+OPTIONS MPRINT SYMBOLGEN MLOGIC;
+
+/* Código Fixo */
+PROC IMPORT OUT= WORK.subset2a 
+            DATAFILE= "D:\Treinamento_SAS\Programacao I e II\Programming_Essentials_Files\SAS_Education\lwprg1\sales.xls" 
+            DBMS=EXCEL 
+			REPLACE;  		/* Substituir o arquivo caso já exista */
+     RANGE="Australia$"; 	/* Nome da Planilha a ser importada */
+     GETNAMES=YES;			/* Captura os nomes das colunas do arquivo excel */
+     MIXED=NO;				/* Habilita a conversão de numérico para caracter para colunas que possuam ter 2 tipos de dados*/
+     SCANTEXT=YES;			/* Varre o tamanho da coluna para definir o tamanho da variável no dataset de saída */	
+     USEDATE=YES;			/* Opção de importação de campos no formato data */	
+     SCANTIME=YES;			/* Varre o conteúdo do campo para verificar se será um campo data */	
+RUN;
+
+/* Importacao por Macro de XLS */
+%macro importaxls(arq_import, sheet, arq_saida);
+PROC IMPORT OUT= WORK.&arq_saida
+            DATAFILE= "D:\Treinamento_SAS\Programacao I e II\Programming_Essentials_Files\SAS_Education\lwprg1\&arq_import" 
+            DBMS=EXCEL 
+			REPLACE;  		/* Substituir o arquivo caso já exista */
+     RANGE="&sheet$"; 	/* Nome da Planilha a ser importada */
+     GETNAMES=YES;			/* Captura os nomes das colunas do arquivo excel */
+     MIXED=NO;				/* Habilita a conversão de numérico para caracter para colunas que possuam ter 2 tipos de dados*/
+     SCANTEXT=YES;			/* Varre o tamanho da coluna para definir o tamanho da variável no dataset de saída */	
+     USEDATE=YES;			/* Opção de importação de campos no formato data */	
+     SCANTIME=YES;			/* Varre o conteúdo do campo para verificar se será um campo data */	
+RUN;
+%mend importaxls;
+%importaxls(sales.xls, Australia, TB_IMPORT_XLS)
+
+
+/* Importacao XLS ou Access de Acordo com o parametro */
+%macro importa(arq_import, tabela, arq_saida,tipo);
+%let tipo = %upcase(&tipo);
+
+%if &tipo eq XLS %then %do;
+	PROC IMPORT OUT= WORK.&arq_saida
+	            DATAFILE= "D:\Treinamento_SAS\&arq_import" 
+	            DBMS=EXCEL 
+				REPLACE;  		/* Substituir o arquivo caso já exista */
+	     RANGE="&tabela$"; 		/* Nome da Planilha a ser importada */
+	     GETNAMES=YES;			/* Captura os nomes das colunas do arquivo excel */
+	     MIXED=NO;				/* Habilita a conversão de numérico para caracter para colunas que possuam ter 2 tipos de dados*/
+	     SCANTEXT=YES;			/* Varre o tamanho da coluna para definir o tamanho da variável no dataset de saída */	
+	     USEDATE=YES;			/* Opção de importação de campos no formato data */	
+	     SCANTIME=YES;			/* Varre o conteúdo do campo para verificar se será um campo data */	
+	RUN;
+%end;
+%else %if &tipo eq MDB %then %do;
+	PROC IMPORT
+	        TABLE="&tabela"
+	        OUT=WORK.&arq_saida
+	        REPLACE
+	        DBMS=ACCESS;
+	    DATABASE="D:\Treinamento_SAS\&arq_import";
+	RUN;
+%end;
+%mend importa;
+%importa(sales.xls, Australia, TB_IMPORT_XLS,xls)
+%importa(db.accdb, tb_cliente, TB_IMPORT,mdb)

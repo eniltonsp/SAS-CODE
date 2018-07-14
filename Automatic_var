@@ -1,0 +1,32 @@
+DATA TB_USANDO_VAR_AUTOMATICAS;
+	VAR_AUTO_SYSDATE= "&SYSDATE."d;
+	VAR_AUTO_SYSDATE9= "&SYSDATE9."d;
+	VAR_AUTO_SYSTIME= "&SYSTIME.";
+	VAR_AUTO_SYSSCP= "&SYSSCP.";
+	VAR_AUTO_SYSUSERID= "&SYSUSERID.";
+	VAR_AUTO_SYSDAY= "&SYSDAY.";
+	VAR_AUTO_SYSDSN= "&SYSDSN.";
+	VAR_AUTO_SYSLAST= "&SYSLAST.";
+	FORMAT VAR_AUTO_SYSDATE VAR_AUTO_SYSDATE9 DDMMYY10.;
+RUN;
+
+data _null_;
+varteste = "&sysdate9.";
+%put &varteste;
+run;
+
+%PUT _AUTOMATIC_;
+
+proc freq data=orion.Customer;
+   table Country / nocum;
+   footnote1 'Created' &systime &sysday ',' &sysdate9;
+   footnote2 "By user &sysuserid on system &sysscpl";
+run;
+
+%let date1=25may2007;
+%let date2=15jun2007;
+proc print data=orion.Order_Fact;
+   where Order_Date between "&date1"d and "&date2"d;
+   var Order_Date Product_ID Quantity;
+   title "Orders between &date1 and &date2";
+run;

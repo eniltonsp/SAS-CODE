@@ -1,0 +1,92 @@
+* ----------------------------------- ;
+DATA TAB ;
+	NR_DCTO = 123456789 ;
+	NR_DCTO_FLAL = 0 ; OUTPUT ;
+	NR_DCTO = 23456789012 ; 
+	NR_DCTO_FLAL = 1 ; OUTPUT ;
+RUN ;
+
+DATA CNPJ(DROP=DV1 DV2 J X I CNPJ) ;
+set tab ;
+	CNPJ = INPUT(COMPRESS(PUT(NR_DCTO,Z8.)||PUT(NR_DCTO_FLAL,Z4.)),12.) ;
+
+	* TESTA O CAMPO DE DIGITO PARA VERIFICAR SE ESTE NECESSITA SER CALCULADO ;
+	IF NR_DCTO_DGTO EQ . THEN DO ;
+		/*
+		----------------------------------------------------------------------------
+		CALCULO DO DIGITO VERIFICADOR PARA CNPJ
+		----------------------------------------------------------------------------
+		*/
+		IF NR_DCTO_FLAL NE 0 OR NR_DCTO_FLAL NE . THEN DO ;
+			* 1º DIGITO ;
+			DV1 = 0 ;
+			DO I = 1 TO 12 ;
+				IF I EQ 12 THEN J = 5 ;
+				ELSE IF I EQ 11 THEN J = 4 ;
+				ELSE IF I EQ 10 THEN J = 3 ;
+				ELSE IF I EQ 9 THEN J = 2 ;
+				ELSE J = I + 1 ;
+				IF I IN(1 2 3 4) THEN
+					X = 7-J ;
+				ELSE 
+					X = 11-(I-3);
+				DV1 = DV1 + INPUT(SUBSTR(PUT(CNPJ,Z12.),I,1),10.) * X  ; 
+			END ;
+
+			IF MOD(DV1,11) < 2 THEN DV1=0 ;	
+			ELSE DV1 = 11 - MOD(DV1,11) ; 
+
+			*2º DIGITO ;
+			DV2 = 0 ;
+			DO I = 1 TO 13 ;
+				IF I = 13 THEN J = 6 ;
+				ELSE IF I EQ 12 THEN J = 5 ;
+				ELSE IF I EQ 11 THEN J = 4 ;
+				ELSE IF I EQ 10 THEN J = 3 ;
+				ELSE IF I EQ 9 THEN J = 2 ;
+				ELSE J = I + 1 ;
+				IF I IN(1 2 3 4 5) THEN
+					X = 8-J ;
+				ELSE 
+					X = 11-(I-4);
+
+				DV2 = DV2 + INPUT(SUBSTR(COMPRESS(PUT(CNPJ,Z12.)||DV1),I,1),10.) * X  ; 
+			END ;
+			IF MOD(DV2,11) < 2 THEN DV2=0 ;	
+			ELSE DV2 = 11 - MOD(DV2,11) ; 
+
+			NR_DCTO_DGTO = INPUT(COMPRESS(DV1||DV2),8.) ;
+		END ;
+		/*
+		----------------------------------------------------------------------------
+		CALCULO DO DIGITO VERIFICADOR PARA CPF
+		----------------------------------------------------------------------------
+		*/
+		IF NR_DCTO_FLAL EQ 0 THEN DO ; ;
+			* CALCULA O 1º DIGITO VERIFICADOR ;
+			DV1 = 0 ;
+			DO I=1 TO 9 ;
+				DV1 = DV1 + INPUT(SUBSTR(PUT(NR_DCTO,Z9.),I,1),10.) * (11-I); 
+			END ;
+			IF MOD(DV1, 11) < 2 THEN DO;
+				DV1 = 0 ;
+			END ;
+			ELSE DO ;
+				DV1 = 11 - MOD(DV1, 11) ;
+			END ;
+
+			* CALCULA O SEGUNDO DIGITO VERIFICADOR ;
+			DV2=0 ;
+			DO I=1 TO 10 ;
+				DV2 = DV2 + INPUT(SUBSTR(COMPRESS(PUT(NR_DCTO,Z9.)||DV1),I,1),10.) * (12-I) ;
+			END ;
+			IF MOD(DV2, 11) < 2 THEN DO;
+				DV2 = 0 ;
+			END ;
+			ELSE DO ;
+				DV2 = 11 - MOD(DV2, 11) ;
+			END ;
+			NR_DCTO_DGTO = INPUT(COMPRESS(DV1||DV2),2.) ;				
+		END ;
+	END ;
+RUN ;

@@ -1,0 +1,13 @@
+/ * Macro for reading text file * /
+%macro readraw(first=2003,last=2007);
+  %do year=&first %to &last;
+    data year&year;
+      infile "F:\Treinamento_SAS\orders&year..dat";
+      input order_ID order_type order_date : date9.;
+    run;
+  %end;
+%mend readraw;	
+
+options mlogic mprint;
+
+%readraw(first=2004,last=2006)

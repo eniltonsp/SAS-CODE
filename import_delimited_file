@@ -1,0 +1,8 @@
+/*import delimited file csv*/
+
+options validvarname=v7;
+Filename ARQ '\\Machine\sas\BI\02 - Pessoas\Enilton\DB\LISTA_PRESTADOR.csv';
+
+proc import datafile=ARQ out=NIL.LIST_PREST dbms=CSV replace;
+   delimiter=';';
+run;
